@@ -2,7 +2,7 @@
 #include <string>
 #ifdef WIN32
 #else
-  #include <unistd.h>
+#include <unistd.h>
 #endif
 #include "javaObject.h"
 #include "javaScope.h"
@@ -16,9 +16,9 @@
 #define DYNAMIC_PROXY_JS_ERROR -4
 
 #ifdef WIN32
-  typedef long threadId;
+typedef long threadId;
 #else
-  typedef pthread_t threadId;
+typedef pthread_t threadId;
 #endif
 
 threadId v8ThreadId;
@@ -30,7 +30,8 @@ uv_async_t uvAsync_dynamicProxyJsCall;
 /*static*/ Nan::Persistent<v8::FunctionTemplate> Java::s_ct;
 /*static*/ std::string Java::s_nativeBindingLocation;
 
-void my_sleep(int dur) {
+void my_sleep(int dur)
+{
 #ifdef WIN32
   Sleep(dur);
 #else
@@ -38,7 +39,8 @@ void my_sleep(int dur) {
 #endif
 }
 
-threadId my_getThreadId() {
+threadId my_getThreadId()
+{
 #ifdef WIN32
   return (long)GetCurrentThreadId();
 #else
@@ -46,7 +48,8 @@ threadId my_getThreadId() {
 #endif
 }
 
-bool v8ThreadIdEquals(threadId a, threadId b) {
+bool v8ThreadIdEquals(threadId a, threadId b)
+{
 #ifdef WIN32
   return a == b;
 #else
@@ -56,25 +59,32 @@ bool v8ThreadIdEquals(threadId a, threadId b) {
 
 void EIO_CallJs(DynamicProxyJsCallData *callData);
 
-void uvAsyncCb_dynamicProxyJsCall(uv_async_t *handle) {
+void uvAsyncCb_dynamicProxyJsCall(uv_async_t *handle)
+{
   DynamicProxyJsCallData *callData;
-  do {
+  do
+  {
     uv_mutex_lock(&uvMutex_dynamicProxyJsCall);
-    if(!queue_dynamicProxyJsCallData.empty()) {
+    if (!queue_dynamicProxyJsCallData.empty())
+    {
       callData = queue_dynamicProxyJsCallData.front();
       queue_dynamicProxyJsCallData.pop();
-    } else {
+    }
+    else
+    {
       callData = NULL;
     }
     uv_mutex_unlock(&uvMutex_dynamicProxyJsCall);
 
-    if(callData) {
+    if (callData)
+    {
       EIO_CallJs(callData);
     }
-  } while(callData);
+  } while (callData);
 }
 
-/*static*/ void Java::Init(v8::Local<v8::Object> target) {
+/*static*/ void Java::Init(v8::Local<v8::Object> target)
+{
   Nan::HandleScope scope;
 
   v8ThreadId = my_getThreadId();
@@ -112,7 +122,8 @@ void uvAsyncCb_dynamicProxyJsCall(uv_async_t *handle) {
   JavaProxyObject::init();
 }
 
-NAN_METHOD(Java::New) {
+NAN_METHOD(Java::New)
+{
   Nan::HandleScope scope;
 
   Java *self = new Java();
@@ -126,7 +137,8 @@ NAN_METHOD(Java::New) {
   info.GetReturnValue().Set(info.This());
 }
 
-Java::Java() {
+Java::Java()
+{
   this->m_jvm = NULL;
   this->m_env = NULL;
 
@@ -137,12 +149,15 @@ Java::Java() {
   doPromise = false;
 }
 
-Java::~Java() {
+Java::~Java()
+{
   this->destroyJVM(&this->m_jvm, &this->m_env);
 }
 
-v8::Local<v8::Value> Java::ensureJvm() {
-  if(!m_jvm) {
+v8::Local<v8::Value> Java::ensureJvm()
+{
+  if (!m_jvm)
+  {
     v8::Local<v8::Value> result = createJVM(&this->m_jvm, &this->m_env);
     assert(result->IsNull());
     return result;
@@ -151,7 +166,8 @@ v8::Local<v8::Value> Java::ensureJvm() {
   return Nan::Null();
 }
 
-void Java::configureAsync(v8::Local<v8::Value>& asyncOptions) {
+void Java::configureAsync(v8::Local<v8::Value> &asyncOptions)
+{
   v8::Local<v8::Object> asyncOptionsObj = asyncOptions.As<v8::Object>();
 
   m_SyncSuffix = "invalid";
@@ -163,7 +179,8 @@ void Java::configureAsync(v8::Local<v8::Value>& asyncOptions) {
 
   v8::MaybeLocal<v8::Value> maybeSuffixValue = Nan::Get(asyncOptionsObj, Nan::New<v8::String>("syncSuffix").ToLocalChecked());
   v8::Local<v8::Value> suffixValue;
-  if (maybeSuffixValue.ToLocal(&suffixValue) && suffixValue->IsString()) {
+  if (maybeSuffixValue.ToLocal(&suffixValue) && suffixValue->IsString())
+  {
     v8::Local<v8::String> suffix = suffixValue->ToString(Nan::GetCurrentContext()).ToLocalChecked();
     Nan::Utf8String utf8(suffix);
     m_SyncSuffix.assign(*utf8);
@@ -171,7 +188,8 @@ void Java::configureAsync(v8::Local<v8::Value>& asyncOptions) {
   }
 
   maybeSuffixValue = Nan::Get(asyncOptionsObj, Nan::New<v8::String>("asyncSuffix").ToLocalChecked());
-  if (maybeSuffixValue.ToLocal(&suffixValue) && suffixValue->IsString()) {
+  if (maybeSuffixValue.ToLocal(&suffixValue) && suffixValue->IsString())
+  {
     v8::Local<v8::String> suffix = suffixValue->ToString(Nan::GetCurrentContext()).ToLocalChecked();
     Nan::Utf8String utf8(suffix);
     m_AsyncSuffix.assign(*utf8);
@@ -179,36 +197,43 @@ void Java::configureAsync(v8::Local<v8::Value>& asyncOptions) {
   }
 
   maybeSuffixValue = Nan::Get(asyncOptionsObj, Nan::New<v8::String>("promiseSuffix").ToLocalChecked());
-  if (maybeSuffixValue.ToLocal(&suffixValue) && suffixValue->IsString()) {
+  if (maybeSuffixValue.ToLocal(&suffixValue) && suffixValue->IsString())
+  {
     v8::Local<v8::String> suffix = suffixValue->ToString(Nan::GetCurrentContext()).ToLocalChecked();
     Nan::Utf8String utf8(suffix);
     m_PromiseSuffix.assign(*utf8);
     v8::MaybeLocal<v8::Value> maybePromisify = Nan::Get(asyncOptionsObj, Nan::New<v8::String>("promisify").ToLocalChecked());
     v8::Local<v8::Value> promisify;
-    if (maybePromisify.ToLocal(&promisify) && !promisify->IsFunction()) {
+    if (maybePromisify.ToLocal(&promisify) && !promisify->IsFunction())
+    {
       fprintf(stderr, "asyncOptions.promisify must be a function");
       assert(promisify->IsFunction());
     }
     doPromise = true;
   }
 
-  if (doSync && doAsync) {
+  if (doSync && doAsync)
+  {
     assert(m_SyncSuffix != m_AsyncSuffix);
   }
-  if (doSync && doPromise) {
+  if (doSync && doPromise)
+  {
     assert(m_SyncSuffix != m_PromiseSuffix);
   }
-  if (doAsync && doPromise) {
+  if (doAsync && doPromise)
+  {
     assert(m_AsyncSuffix != m_PromiseSuffix);
   }
 
   m_asyncOptions.Reset(asyncOptionsObj);
 }
 
-v8::Local<v8::Value> Java::createJVM(JavaVM** jvm, JNIEnv** env) {
+v8::Local<v8::Value> Java::createJVM(JavaVM **jvm, JNIEnv **env)
+{
   v8::MaybeLocal<v8::Value> maybeAsyncOptions = Nan::Get(this->handle(), Nan::New<v8::String>("asyncOptions").ToLocalChecked());
   v8::Local<v8::Value> asyncOptions;
-  if (maybeAsyncOptions.ToLocal(&asyncOptions) && asyncOptions->IsObject()) {
+  if (maybeAsyncOptions.ToLocal(&asyncOptions) && asyncOptions->IsObject())
+  {
     configureAsync(asyncOptions);
   }
 
@@ -218,21 +243,25 @@ v8::Local<v8::Value> Java::createJVM(JavaVM** jvm, JNIEnv** env) {
 
   v8::MaybeLocal<v8::Value> maybeClassPathValue = Nan::Get(this->handle(), Nan::New<v8::String>("classpath").ToLocalChecked());
   v8::Local<v8::Value> classPathValue;
-  if(!maybeClassPathValue.ToLocal(&classPathValue) || !classPathValue->IsArray()) {
+  if (!maybeClassPathValue.ToLocal(&classPathValue) || !classPathValue->IsArray())
+  {
     return Nan::TypeError("Classpath must be an array");
   }
   v8::Local<v8::Array> classPathArrayTemp = v8::Local<v8::Array>::Cast(classPathValue);
   m_classPathArray.Reset(classPathArrayTemp);
-  for(uint32_t i=0; i<classPathArrayTemp->Length(); i++) {
-    if(i != 0) {
-      #ifdef WIN32
-        classPath << ";";
-      #else
-        classPath << ":";
-      #endif
+  for (uint32_t i = 0; i < classPathArrayTemp->Length(); i++)
+  {
+    if (i != 0)
+    {
+#ifdef WIN32
+      classPath << ";";
+#else
+      classPath << ":";
+#endif
     }
     v8::Local<v8::Value> arrayItemValue = classPathArrayTemp->Get(Nan::GetCurrentContext(), i).ToLocalChecked();
-    if(!arrayItemValue->IsString()) {
+    if (!arrayItemValue->IsString())
+    {
       return Nan::TypeError("Classpath must only contain strings");
     }
     v8::Local<v8::String> arrayItem = arrayItemValue->ToString(Nan::GetCurrentContext()).ToLocalChecked();
@@ -247,7 +276,8 @@ v8::Local<v8::Value> Java::createJVM(JavaVM** jvm, JNIEnv** env) {
 
   // get other options
   v8::Local<v8::Value> optionsValue = Nan::Get(this->handle(), Nan::New<v8::String>("options").ToLocalChecked()).FromMaybe(v8::Local<v8::Value>());
-  if(!optionsValue->IsArray()) {
+  if (!optionsValue->IsArray())
+  {
     return Nan::TypeError("options must be an array");
   }
   v8::Local<v8::Array> optionsArrayTemp = v8::Local<v8::Array>::Cast(optionsValue);
@@ -255,18 +285,20 @@ v8::Local<v8::Value> Java::createJVM(JavaVM** jvm, JNIEnv** env) {
 
   // create vm options
   int vmOptionsCount = optionsArrayTemp->Length() + 1;
-  JavaVMOption* vmOptions = new JavaVMOption[vmOptionsCount];
+  JavaVMOption *vmOptions = new JavaVMOption[vmOptionsCount];
   //printf("classPath: %s\n", classPath.str().c_str());
   vmOptions[0].optionString = strdup(classPath.str().c_str());
-  for(uint32_t i=0; i<optionsArrayTemp->Length(); i++) {
+  for (uint32_t i = 0; i < optionsArrayTemp->Length(); i++)
+  {
     v8::Local<v8::Value> arrayItemValue = optionsArrayTemp->Get(Nan::GetCurrentContext(), i).ToLocalChecked();
-    if(!arrayItemValue->IsString()) {
+    if (!arrayItemValue->IsString())
+    {
       delete[] vmOptions;
       return Nan::TypeError("options must only contain strings");
     }
     v8::Local<v8::String> arrayItem = arrayItemValue->ToString(Nan::GetCurrentContext()).ToLocalChecked();
     Nan::Utf8String arrayItemStr(arrayItem);
-    vmOptions[i+1].optionString = strdup(*arrayItemStr);
+    vmOptions[i + 1].optionString = strdup(*arrayItemStr);
   }
 
   JavaVMInitArgs args;
@@ -290,11 +322,11 @@ v8::Local<v8::Value> Java::createJVM(JavaVM** jvm, JNIEnv** env) {
   args.options = vmOptions;
   args.nOptions = vmOptionsCount;
 
-  JavaVM* jvmTemp;
+  JavaVM *jvmTemp;
   JNI_CreateJavaVM(&jvmTemp, (void **)env, &args);
   *jvm = jvmTemp;
 
-  delete [] vmOptions;
+  delete[] vmOptions;
 
   m_classLoader = getSystemClassLoader(*env);
 
@@ -307,7 +339,8 @@ v8::Local<v8::Value> Java::createJVM(JavaVM** jvm, JNIEnv** env) {
   Nan::SetAccessor(this->handle(), Nan::New<v8::String>("asyncOptions").ToLocalChecked(), AccessorProhibitsOverwritingGetter, AccessorProhibitsOverwritingSetter);
   Nan::SetAccessor(this->handle(), Nan::New<v8::String>("onJvmCreated").ToLocalChecked(), AccessorProhibitsOverwritingGetter, AccessorProhibitsOverwritingSetter);
 
-  if (onJvmCreated->IsFunction()) {
+  if (onJvmCreated->IsFunction())
+  {
     v8::Local<v8::Function> onJvmCreatedFunc = onJvmCreated.As<v8::Function>();
     v8::Local<v8::Object> context = Nan::New<v8::Object>();
     Nan::Call(onJvmCreatedFunc, context, 0, NULL);
@@ -316,23 +349,33 @@ v8::Local<v8::Value> Java::createJVM(JavaVM** jvm, JNIEnv** env) {
   return Nan::Null();
 }
 
-NAN_GETTER(Java::AccessorProhibitsOverwritingGetter) {
-  Java* self = Nan::ObjectWrap::Unwrap<Java>(info.This());
+NAN_GETTER(Java::AccessorProhibitsOverwritingGetter)
+{
+  Java *self = Nan::ObjectWrap::Unwrap<Java>(info.This());
   Nan::HandleScope scope;
   Nan::Utf8String nameStr(property);
-  if(!strcmp("classpath", *nameStr)) {
+  if (!strcmp("classpath", *nameStr))
+  {
     info.GetReturnValue().Set(Nan::New(self->m_classPathArray));
     return;
-  } else if(!strcmp("options", *nameStr)) {
+  }
+  else if (!strcmp("options", *nameStr))
+  {
     info.GetReturnValue().Set(Nan::New(self->m_optionsArray));
     return;
-  } else if(!strcmp("nativeBindingLocation", *nameStr)) {
+  }
+  else if (!strcmp("nativeBindingLocation", *nameStr))
+  {
     info.GetReturnValue().Set(Nan::New(Java::s_nativeBindingLocation.c_str()).ToLocalChecked());
     return;
-  } else if(!strcmp("asyncOptions", *nameStr)) {
+  }
+  else if (!strcmp("asyncOptions", *nameStr))
+  {
     info.GetReturnValue().Set(Nan::New(self->m_asyncOptions));
     return;
-  } else if(!strcmp("onJvmCreated", *nameStr)) {
+  }
+  else if (!strcmp("onJvmCreated", *nameStr))
+  {
     // There is no good reason to get onJvmCreated, so just fall through to error below.
   }
 
@@ -341,28 +384,32 @@ NAN_GETTER(Java::AccessorProhibitsOverwritingGetter) {
   info.GetReturnValue().Set(Nan::Error(errStr.str().c_str()));
 }
 
-NAN_SETTER(Java::AccessorProhibitsOverwritingSetter) {
+NAN_SETTER(Java::AccessorProhibitsOverwritingSetter)
+{
   Nan::Utf8String nameStr(property);
   std::ostringstream errStr;
   errStr << "Cannot set " << *nameStr << " after calling any other java function.";
   Nan::ThrowError(errStr.str().c_str());
 }
 
-void Java::destroyJVM(JavaVM** jvm, JNIEnv** env) {
+void Java::destroyJVM(JavaVM **jvm, JNIEnv **env)
+{
   (*jvm)->DestroyJavaVM();
   *jvm = NULL;
   *env = NULL;
 }
 
-NAN_METHOD(Java::getClassLoader) {
+NAN_METHOD(Java::getClassLoader)
+{
   Nan::HandleScope scope;
-  Java* self = Nan::ObjectWrap::Unwrap<Java>(info.This());
+  Java *self = Nan::ObjectWrap::Unwrap<Java>(info.This());
   v8::Local<v8::Value> ensureJvmResults = self->ensureJvm();
-  if(!ensureJvmResults->IsNull()) {
+  if (!ensureJvmResults->IsNull())
+  {
     info.GetReturnValue().Set(ensureJvmResults);
     return;
   }
-  JNIEnv* env = self->getJavaEnv();
+  JNIEnv *env = self->getJavaEnv();
   JavaScope javaScope(env);
 
   jclass classClazz = env->FindClass("java/lang/ClassLoader");
@@ -374,15 +421,17 @@ NAN_METHOD(Java::getClassLoader) {
   info.GetReturnValue().Set(javaToV8(self, env, result));
 }
 
-NAN_METHOD(Java::newInstance) {
+NAN_METHOD(Java::newInstance)
+{
   Nan::HandleScope scope;
-  Java* self = Nan::ObjectWrap::Unwrap<Java>(info.This());
+  Java *self = Nan::ObjectWrap::Unwrap<Java>(info.This());
   v8::Local<v8::Value> ensureJvmResults = self->ensureJvm();
-  if(!ensureJvmResults->IsNull()) {
+  if (!ensureJvmResults->IsNull())
+  {
     info.GetReturnValue().Set(ensureJvmResults);
     return;
   }
-  JNIEnv* env = self->getJavaEnv();
+  JNIEnv *env = self->getJavaEnv();
   JavaScope javaScope(env);
 
   int argsStart = 0;
@@ -394,7 +443,8 @@ NAN_METHOD(Java::newInstance) {
 
   // find class
   jclass clazz = javaFindClass(env, className);
-  if(clazz == NULL) {
+  if (clazz == NULL)
+  {
     EXCEPTION_CALL_CALLBACK(self, "Could not find class " << className.c_str());
     info.GetReturnValue().SetUndefined();
     return;
@@ -403,7 +453,8 @@ NAN_METHOD(Java::newInstance) {
   // get method
   jobjectArray methodArgs = v8ToJava(env, info, argsStart, argsEnd);
   jobject method = javaFindConstructor(env, clazz, methodArgs);
-  if(method == NULL) {
+  if (method == NULL)
+  {
     std::string msg = methodNotFoundToString(env, clazz, className, true, info, argsStart, argsEnd);
     EXCEPTION_CALL_CALLBACK(self, msg);
     info.GetReturnValue().SetUndefined();
@@ -411,21 +462,23 @@ NAN_METHOD(Java::newInstance) {
   }
 
   // run
-  NewInstanceBaton* baton = new NewInstanceBaton(self, clazz, method, methodArgs, callback);
+  NewInstanceBaton *baton = new NewInstanceBaton(self, clazz, method, methodArgs, callback);
   baton->run();
 
   END_CALLBACK_FUNCTION("\"Constructor for class '" << className << "' called without a callback did you mean to use the Sync version?\"");
 }
 
-NAN_METHOD(Java::newInstanceSync) {
+NAN_METHOD(Java::newInstanceSync)
+{
   Nan::HandleScope scope;
-  Java* self = Nan::ObjectWrap::Unwrap<Java>(info.This());
+  Java *self = Nan::ObjectWrap::Unwrap<Java>(info.This());
   v8::Local<v8::Value> ensureJvmResults = self->ensureJvm();
-  if(!ensureJvmResults->IsNull()) {
+  if (!ensureJvmResults->IsNull())
+  {
     info.GetReturnValue().Set(ensureJvmResults);
     return;
   }
-  JNIEnv* env = self->getJavaEnv();
+  JNIEnv *env = self->getJavaEnv();
   JavaScope javaScope(env);
 
   int argsStart = 0;
@@ -436,7 +489,8 @@ NAN_METHOD(Java::newInstanceSync) {
 
   // find class
   jclass clazz = javaFindClass(env, className);
-  if(clazz == NULL) {
+  if (clazz == NULL)
+  {
     std::ostringstream errStr;
     errStr << "Could not create class " << className.c_str();
     return Nan::ThrowError(javaExceptionToV8(self, env, errStr.str()));
@@ -445,31 +499,35 @@ NAN_METHOD(Java::newInstanceSync) {
   // find method
   jobjectArray methodArgs = v8ToJava(env, info, argsStart, argsEnd);
   jobject method = javaFindConstructor(env, clazz, methodArgs);
-  if(method == NULL) {
+  if (method == NULL)
+  {
     std::string msg = methodNotFoundToString(env, clazz, className, true, info, argsStart, argsEnd);
     return Nan::ThrowError(javaExceptionToV8(self, env, msg));
   }
 
   // run
   v8::Local<v8::Value> callback = Nan::Null();
-  NewInstanceBaton* baton = new NewInstanceBaton(self, clazz, method, methodArgs, callback);
+  NewInstanceBaton *baton = new NewInstanceBaton(self, clazz, method, methodArgs, callback);
   v8::Local<v8::Value> result = baton->runSync();
   delete baton;
-  if(result->IsNativeError()) {
+  if (result->IsNativeError())
+  {
     return Nan::ThrowError(result);
   }
   info.GetReturnValue().Set(result);
 }
 
-NAN_METHOD(Java::newProxy) {
+NAN_METHOD(Java::newProxy)
+{
   Nan::HandleScope scope;
-  Java* self = Nan::ObjectWrap::Unwrap<Java>(info.This());
+  Java *self = Nan::ObjectWrap::Unwrap<Java>(info.This());
   v8::Local<v8::Value> ensureJvmResults = self->ensureJvm();
-  if(!ensureJvmResults->IsNull()) {
+  if (!ensureJvmResults->IsNull())
+  {
     info.GetReturnValue().Set(ensureJvmResults);
     return;
   }
-  JNIEnv* env = self->getJavaEnv();
+  JNIEnv *env = self->getJavaEnv();
   JavaScope javaScope(env);
 
   int argsStart = 0;
@@ -477,7 +535,7 @@ NAN_METHOD(Java::newProxy) {
   ARGS_FRONT_STRING(interfaceName);
   ARGS_FRONT_OBJECT(functions);
 
-  DynamicProxyData* dynamicProxyData = new DynamicProxyData();
+  DynamicProxyData *dynamicProxyData = new DynamicProxyData();
   dynamicProxyData->markerStart = DYNAMIC_PROXY_DATA_MARKER_START;
   dynamicProxyData->markerEnd = DYNAMIC_PROXY_DATA_MARKER_END;
   dynamicProxyData->java = self;
@@ -487,7 +545,8 @@ NAN_METHOD(Java::newProxy) {
   // find NodeDynamicProxyClass
   std::string className = "node.NodeDynamicProxyClass";
   jclass clazz = javaFindClass(env, className);
-  if(clazz == NULL) {
+  if (clazz == NULL)
+  {
     std::ostringstream errStr;
     errStr << "Could not create class node/NodeDynamicProxyClass";
     delete dynamicProxyData;
@@ -500,7 +559,8 @@ NAN_METHOD(Java::newProxy) {
   env->SetObjectArrayElement(methodArgs, 0, v8ToJava(env, Nan::New<v8::String>(s_nativeBindingLocation.c_str()).ToLocalChecked()));
   env->SetObjectArrayElement(methodArgs, 1, longToJavaLongObj(env, (jlong)dynamicProxyData));
   jobject method = javaFindConstructor(env, clazz, methodArgs);
-  if(method == NULL) {
+  if (method == NULL)
+  {
     std::ostringstream errStr;
     errStr << "Could not find constructor for class node/NodeDynamicProxyClass";
     return Nan::ThrowError(javaExceptionToV8(self, env, errStr.str()));
@@ -514,14 +574,16 @@ NAN_METHOD(Java::newProxy) {
 
   // run constructor
   jobject dynamicProxy = env->CallObjectMethod(method, constructor_newInstance, methodArgs);
-  if(env->ExceptionCheck()) {
+  if (env->ExceptionCheck())
+  {
     std::ostringstream errStr;
     errStr << "Error creating class";
     return Nan::ThrowError(javaExceptionToV8(self, env, errStr.str()));
   }
 
   jclass dynamicInterface = javaFindClass(env, interfaceName);
-  if(dynamicInterface == NULL) {
+  if (dynamicInterface == NULL)
+  {
     std::ostringstream errStr;
     errStr << "Could not find interface ";
     errStr << interfaceName;
@@ -529,7 +591,8 @@ NAN_METHOD(Java::newProxy) {
   }
   jclass classClazz = env->FindClass("java/lang/Class");
   jobjectArray classArray = env->NewObjectArray(1, classClazz, NULL);
-  if(classArray == NULL) {
+  if (classArray == NULL)
+  {
     std::ostringstream errStr;
     errStr << "Could not create class array for Proxy";
     return Nan::ThrowError(javaExceptionToV8(self, env, errStr.str()));
@@ -540,7 +603,8 @@ NAN_METHOD(Java::newProxy) {
   jobject classLoader = env->CallObjectMethod(dynamicInterface, class_getClassLoader);
   assertNoException(env);
 
-  if(classLoader == NULL) {
+  if (classLoader == NULL)
+  {
     jclass objectClazz = env->FindClass("java/lang/Object");
     jmethodID object_getClass = env->GetMethodID(objectClazz, "getClass", "()Ljava/lang/Class;");
     jobject jobjClass = env->CallObjectMethod(dynamicProxy, object_getClass);
@@ -548,7 +612,8 @@ NAN_METHOD(Java::newProxy) {
     classLoader = env->CallObjectMethod(jobjClass, class_getClassLoader);
     checkJavaException(env);
   }
-  if(classLoader == NULL) {
+  if (classLoader == NULL)
+  {
     std::ostringstream errStr;
     errStr << "Could not get classloader for Proxy";
     return Nan::ThrowError(javaExceptionToV8(self, env, errStr.str()));
@@ -558,7 +623,8 @@ NAN_METHOD(Java::newProxy) {
   jclass proxyClass = env->FindClass("java/lang/reflect/Proxy");
   jmethodID proxy_newProxyInstance = env->GetStaticMethodID(proxyClass, "newProxyInstance", "(Ljava/lang/ClassLoader;[Ljava/lang/Class;Ljava/lang/reflect/InvocationHandler;)Ljava/lang/Object;");
   jobject proxyInstance = env->CallStaticObjectMethod(proxyClass, proxy_newProxyInstance, classLoader, classArray, dynamicProxy);
-  if(env->ExceptionCheck()) {
+  if (env->ExceptionCheck())
+  {
     std::ostringstream errStr;
     errStr << "Error creating java.lang.reflect.Proxy";
     return Nan::ThrowError(javaExceptionToV8(self, env, errStr.str()));
@@ -570,15 +636,17 @@ NAN_METHOD(Java::newProxy) {
   info.GetReturnValue().Set(result);
 }
 
-NAN_METHOD(Java::callStaticMethod) {
+NAN_METHOD(Java::callStaticMethod)
+{
   Nan::HandleScope scope;
-  Java* self = Nan::ObjectWrap::Unwrap<Java>(info.This());
+  Java *self = Nan::ObjectWrap::Unwrap<Java>(info.This());
   v8::Local<v8::Value> ensureJvmResults = self->ensureJvm();
-  if(!ensureJvmResults->IsNull()) {
+  if (!ensureJvmResults->IsNull())
+  {
     info.GetReturnValue().Set(ensureJvmResults);
     return;
   }
-  JNIEnv* env = self->getJavaEnv();
+  JNIEnv *env = self->getJavaEnv();
   JavaScope javaScope(env);
 
   int argsStart = 0;
@@ -591,7 +659,8 @@ NAN_METHOD(Java::callStaticMethod) {
 
   // find class
   jclass clazz = javaFindClass(env, className);
-  if(clazz == NULL) {
+  if (clazz == NULL)
+  {
     EXCEPTION_CALL_CALLBACK(self, "Could not create class " << className.c_str());
     info.GetReturnValue().SetUndefined();
     return;
@@ -600,7 +669,8 @@ NAN_METHOD(Java::callStaticMethod) {
   // find method
   jobjectArray methodArgs = v8ToJava(env, info, argsStart, argsEnd);
   jobject method = javaFindMethod(env, clazz, methodName, methodArgs);
-  if(method == NULL) {
+  if (method == NULL)
+  {
     std::string msg = methodNotFoundToString(env, clazz, methodName, false, info, argsStart, argsEnd);
     EXCEPTION_CALL_CALLBACK(self, msg);
     info.GetReturnValue().SetUndefined();
@@ -608,21 +678,23 @@ NAN_METHOD(Java::callStaticMethod) {
   }
 
   // run
-  StaticMethodCallBaton* baton = new StaticMethodCallBaton(self, clazz, method, methodArgs, callback);
+  StaticMethodCallBaton *baton = new StaticMethodCallBaton(self, clazz, method, methodArgs, callback);
   baton->run();
 
   END_CALLBACK_FUNCTION("\"Static method '" << methodName << "' called without a callback did you mean to use the Sync version?\"");
 }
 
-NAN_METHOD(Java::callStaticMethodSync) {
+NAN_METHOD(Java::callStaticMethodSync)
+{
   Nan::HandleScope scope;
-  Java* self = Nan::ObjectWrap::Unwrap<Java>(info.This());
+  Java *self = Nan::ObjectWrap::Unwrap<Java>(info.This());
   v8::Local<v8::Value> ensureJvmResults = self->ensureJvm();
-  if(!ensureJvmResults->IsNull()) {
+  if (!ensureJvmResults->IsNull())
+  {
     info.GetReturnValue().Set(ensureJvmResults);
     return;
   }
-  JNIEnv* env = self->getJavaEnv();
+  JNIEnv *env = self->getJavaEnv();
   JavaScope javaScope(env);
 
   int argsStart = 0;
@@ -634,7 +706,8 @@ NAN_METHOD(Java::callStaticMethodSync) {
 
   // find class
   jclass clazz = javaFindClass(env, className);
-  if(clazz == NULL) {
+  if (clazz == NULL)
+  {
     std::ostringstream errStr;
     errStr << "Could not create class " << className.c_str();
     return Nan::ThrowError(javaExceptionToV8(self, env, errStr.str()));
@@ -643,32 +716,36 @@ NAN_METHOD(Java::callStaticMethodSync) {
   // find method
   jobjectArray methodArgs = v8ToJava(env, info, argsStart, argsEnd);
   jobject method = javaFindMethod(env, clazz, methodName, methodArgs);
-  if(method == NULL) {
+  if (method == NULL)
+  {
     std::string msg = methodNotFoundToString(env, clazz, methodName, false, info, argsStart, argsEnd);
     return Nan::ThrowError(javaExceptionToV8(self, env, msg));
   }
 
   // run
   v8::Local<v8::Value> callback = Nan::Null();
-  StaticMethodCallBaton* baton = new StaticMethodCallBaton(self, clazz, method, methodArgs, callback);
+  StaticMethodCallBaton *baton = new StaticMethodCallBaton(self, clazz, method, methodArgs, callback);
   v8::Local<v8::Value> result = baton->runSync();
   delete baton;
-  if(result->IsNativeError()) {
+  if (result->IsNativeError())
+  {
     Nan::ThrowError(result);
     return;
   }
   info.GetReturnValue().Set(result);
 }
 
-NAN_METHOD(Java::callMethodSync) {
+NAN_METHOD(Java::callMethodSync)
+{
   Nan::HandleScope scope;
-  Java* self = Nan::ObjectWrap::Unwrap<Java>(info.This());
+  Java *self = Nan::ObjectWrap::Unwrap<Java>(info.This());
   v8::Local<v8::Value> ensureJvmResults = self->ensureJvm();
-  if(!ensureJvmResults->IsNull()) {
+  if (!ensureJvmResults->IsNull())
+  {
     info.GetReturnValue().Set(ensureJvmResults);
     return;
   }
-  JNIEnv* env = self->getJavaEnv();
+  JNIEnv *env = self->getJavaEnv();
   JavaScope javaScope(env);
 
   int argsStart = 0;
@@ -678,37 +755,41 @@ NAN_METHOD(Java::callMethodSync) {
   ARGS_FRONT_OBJECT(instanceObj);
   ARGS_FRONT_STRING(methodName);
 
-  JavaObject* javaObj = Nan::ObjectWrap::Unwrap<JavaObject>(instanceObj);
+  JavaObject *javaObj = Nan::ObjectWrap::Unwrap<JavaObject>(instanceObj);
 
   // find method
   jclass clazz = javaObj->getClass();
   jobjectArray methodArgs = v8ToJava(env, info, argsStart, argsEnd);
   jobject method = javaFindMethod(env, clazz, methodName, methodArgs);
-  if(method == NULL) {
+  if (method == NULL)
+  {
     std::string msg = methodNotFoundToString(env, clazz, methodName, false, info, argsStart, argsEnd);
     return Nan::ThrowError(javaExceptionToV8(self, env, msg));
   }
 
   // run
   v8::Local<v8::Value> callback = Nan::Null();
-  InstanceMethodCallBaton* baton = new InstanceMethodCallBaton(self, javaObj, method, methodArgs, callback);
+  InstanceMethodCallBaton *baton = new InstanceMethodCallBaton(self, javaObj, method, methodArgs, callback);
   v8::Local<v8::Value> result = baton->runSync();
   delete baton;
-  if(result->IsNativeError()) {
+  if (result->IsNativeError())
+  {
     return Nan::ThrowError(result);
   }
   info.GetReturnValue().Set(result);
 }
 
-NAN_METHOD(Java::callMethod) {
+NAN_METHOD(Java::callMethod)
+{
   Nan::HandleScope scope;
-  Java* self = Nan::ObjectWrap::Unwrap<Java>(info.This());
+  Java *self = Nan::ObjectWrap::Unwrap<Java>(info.This());
   v8::Local<v8::Value> ensureJvmResults = self->ensureJvm();
-  if(!ensureJvmResults->IsNull()) {
+  if (!ensureJvmResults->IsNull())
+  {
     info.GetReturnValue().Set(ensureJvmResults);
     return;
   }
-  JNIEnv* env = self->getJavaEnv();
+  JNIEnv *env = self->getJavaEnv();
   JavaScope javaScope(env);
 
   int argsStart = 0;
@@ -719,13 +800,14 @@ NAN_METHOD(Java::callMethod) {
   ARGS_FRONT_STRING(methodName);
   ARGS_BACK_CALLBACK();
 
-  JavaObject* javaObj = Nan::ObjectWrap::Unwrap<JavaObject>(instanceObj);
+  JavaObject *javaObj = Nan::ObjectWrap::Unwrap<JavaObject>(instanceObj);
 
   // find method
   jclass clazz = javaObj->getClass();
   jobjectArray methodArgs = v8ToJava(env, info, argsStart, argsEnd);
   jobject method = javaFindMethod(env, clazz, methodName, methodArgs);
-  if(method == NULL) {
+  if (method == NULL)
+  {
     std::string msg = methodNotFoundToString(env, clazz, methodName, false, info, argsStart, argsEnd);
     EXCEPTION_CALL_CALLBACK(self, msg);
     info.GetReturnValue().SetUndefined();
@@ -733,21 +815,23 @@ NAN_METHOD(Java::callMethod) {
   }
 
   // run
-  InstanceMethodCallBaton* baton = new InstanceMethodCallBaton(self, javaObj, method, methodArgs, callback);
+  InstanceMethodCallBaton *baton = new InstanceMethodCallBaton(self, javaObj, method, methodArgs, callback);
   baton->run();
 
   END_CALLBACK_FUNCTION("\"method '" << methodName << "' called without a callback did you mean to use the Sync version?\"");
 }
 
-NAN_METHOD(Java::findClassSync) {
+NAN_METHOD(Java::findClassSync)
+{
   Nan::HandleScope scope;
-  Java* self = Nan::ObjectWrap::Unwrap<Java>(info.This());
+  Java *self = Nan::ObjectWrap::Unwrap<Java>(info.This());
   v8::Local<v8::Value> ensureJvmResults = self->ensureJvm();
-  if(!ensureJvmResults->IsNull()) {
+  if (!ensureJvmResults->IsNull())
+  {
     info.GetReturnValue().Set(ensureJvmResults);
     return;
   }
-  JNIEnv* env = self->getJavaEnv();
+  JNIEnv *env = self->getJavaEnv();
   JavaScope javaScope(env);
 
   int argsStart = 0;
@@ -757,7 +841,8 @@ NAN_METHOD(Java::findClassSync) {
 
   // find class
   jclass clazz = javaFindClass(env, className);
-  if(clazz == NULL) {
+  if (clazz == NULL)
+  {
     std::ostringstream errStr;
     errStr << "Could not create class " << className.c_str();
     return Nan::ThrowError(javaExceptionToV8(self, env, errStr.str()));
@@ -768,15 +853,17 @@ NAN_METHOD(Java::findClassSync) {
   info.GetReturnValue().Set(result);
 }
 
-NAN_METHOD(Java::newArray) {
+NAN_METHOD(Java::newArray)
+{
   Nan::HandleScope scope;
-  Java* self = Nan::ObjectWrap::Unwrap<Java>(info.This());
+  Java *self = Nan::ObjectWrap::Unwrap<Java>(info.This());
   v8::Local<v8::Value> ensureJvmResults = self->ensureJvm();
-  if(!ensureJvmResults->IsNull()) {
+  if (!ensureJvmResults->IsNull())
+  {
     info.GetReturnValue().Set(ensureJvmResults);
     return;
   }
-  JNIEnv* env = self->getJavaEnv();
+  JNIEnv *env = self->getJavaEnv();
   JavaScope javaScope(env);
 
   int argsStart = 0;
@@ -785,18 +872,21 @@ NAN_METHOD(Java::newArray) {
   ARGS_FRONT_CLASSNAME();
 
   // argument - array
-  if(info.Length() < argsStart+1 || !info[argsStart]->IsArray()) {
+  if (info.Length() < argsStart + 1 || !info[argsStart]->IsArray())
+  {
     std::ostringstream errStr;
-    errStr << "Argument " << (argsStart+1) << " must be an array";
+    errStr << "Argument " << (argsStart + 1) << " must be an array";
     return Nan::ThrowError(Nan::TypeError(errStr.str().c_str()));
   }
   v8::Local<v8::Array> arrayObj = v8::Local<v8::Array>::Cast(info[argsStart]);
 
   // find class and method
   jarray results;
-  if(strcmp(className.c_str(), "byte") == 0) {
+  if (strcmp(className.c_str(), "byte") == 0)
+  {
     results = env->NewByteArray(arrayObj->Length());
-    for(uint32_t i=0; i<arrayObj->Length(); i++) {
+    for (uint32_t i = 0; i < arrayObj->Length(); i++)
+    {
       v8::Local<v8::Value> item = arrayObj->Get(Nan::GetCurrentContext(), i).ToLocalChecked();
       jobject val = v8ToJava(env, item);
       jclass byteClazz = env->FindClass("java/lang/Byte");
@@ -808,9 +898,11 @@ NAN_METHOD(Java::newArray) {
     }
   }
 
-  else if(strcmp(className.c_str(), "char") == 0) {
+  else if (strcmp(className.c_str(), "char") == 0)
+  {
     results = env->NewCharArray(arrayObj->Length());
-    for(uint32_t i=0; i<arrayObj->Length(); i++) {
+    for (uint32_t i = 0; i < arrayObj->Length(); i++)
+    {
       v8::Local<v8::Value> item = arrayObj->Get(Nan::GetCurrentContext(), i).ToLocalChecked();
       jobject val = v8ToJava(env, item);
       jclass stringClazz = env->FindClass("java/lang/String");
@@ -822,9 +914,11 @@ NAN_METHOD(Java::newArray) {
     }
   }
 
-  else if(strcmp(className.c_str(), "short") == 0) {
+  else if (strcmp(className.c_str(), "short") == 0)
+  {
     results = env->NewShortArray(arrayObj->Length());
-    for(uint32_t i=0; i<arrayObj->Length(); i++) {
+    for (uint32_t i = 0; i < arrayObj->Length(); i++)
+    {
       v8::Local<v8::Value> item = arrayObj->Get(Nan::GetCurrentContext(), i).ToLocalChecked();
       jobject val = v8ToJava(env, item);
       jclass shortClazz = env->FindClass("java/lang/Short");
@@ -836,9 +930,27 @@ NAN_METHOD(Java::newArray) {
     }
   }
 
-  else if(strcmp(className.c_str(), "double") == 0) {
+  else if (strcmp(className.c_str(), "long") == 0)
+  {
+    results = env->NewLongArray(arrayObj->Length());
+    for (uint32_t i = 0; i < arrayObj->Length(); i++)
+    {
+      v8::Local<v8::Value> item = arrayObj->Get(Nan::GetCurrentContext(), i).ToLocalChecked();
+      jobject val = v8ToJava(env, item);
+      jclass integerClazz = env->FindClass("java/lang/Long");
+      jmethodID integer_intValue = env->GetMethodID(integerClazz, "longValue", "()J");
+      jlong intValues[1];
+      intValues[0] = env->CallLongMethod(val, integer_intValue);
+      assertNoException(env);
+      env->SetLongArrayRegion((jlongArray)results, i, 1, intValues);
+    }
+  }
+
+  else if (strcmp(className.c_str(), "double") == 0)
+  {
     results = env->NewDoubleArray(arrayObj->Length());
-    for(uint32_t i=0; i<arrayObj->Length(); i++) {
+    for (uint32_t i = 0; i < arrayObj->Length(); i++)
+    {
       v8::Local<v8::Value> item = arrayObj->Get(Nan::GetCurrentContext(), i).ToLocalChecked();
       jobject val = v8ToJava(env, item);
       jclass doubleClazz = env->FindClass("java/lang/Double");
@@ -850,9 +962,11 @@ NAN_METHOD(Java::newArray) {
     }
   }
 
-  else if(strcmp(className.c_str(), "int") == 0) {
+  else if (strcmp(className.c_str(), "int") == 0)
+  {
     results = env->NewIntArray(arrayObj->Length());
-    for(uint32_t i=0; i<arrayObj->Length(); i++) {
+    for (uint32_t i = 0; i < arrayObj->Length(); i++)
+    {
       v8::Local<v8::Value> item = arrayObj->Get(Nan::GetCurrentContext(), i).ToLocalChecked();
       jobject val = v8ToJava(env, item);
       jclass integerClazz = env->FindClass("java/lang/Integer");
@@ -864,9 +978,11 @@ NAN_METHOD(Java::newArray) {
     }
   }
 
-  else if(strcmp(className.c_str(), "float") == 0) {
+  else if (strcmp(className.c_str(), "float") == 0)
+  {
     results = env->NewFloatArray(arrayObj->Length());
-    for(uint32_t i=0; i<arrayObj->Length(); i++) {
+    for (uint32_t i = 0; i < arrayObj->Length(); i++)
+    {
       v8::Local<v8::Value> item = arrayObj->Get(Nan::GetCurrentContext(), i).ToLocalChecked();
       jobject val = v8ToJava(env, item);
       jclass floatClazz = env->FindClass("java/lang/Float");
@@ -878,9 +994,11 @@ NAN_METHOD(Java::newArray) {
     }
   }
 
-  else if(strcmp(className.c_str(), "boolean") == 0) {
+  else if (strcmp(className.c_str(), "boolean") == 0)
+  {
     results = env->NewBooleanArray(arrayObj->Length());
-    for(uint32_t i=0; i<arrayObj->Length(); i++) {
+    for (uint32_t i = 0; i < arrayObj->Length(); i++)
+    {
       v8::Local<v8::Value> item = arrayObj->Get(Nan::GetCurrentContext(), i).ToLocalChecked();
       jobject val = v8ToJava(env, item);
       jclass booleanClazz = env->FindClass("java/lang/Boolean");
@@ -895,7 +1013,8 @@ NAN_METHOD(Java::newArray) {
   else
   {
     jclass clazz = javaFindClass(env, className);
-    if(clazz == NULL) {
+    if (clazz == NULL)
+    {
       std::ostringstream errStr;
       errStr << "Could not create class " << className.c_str();
       return Nan::ThrowError(javaExceptionToV8(self, env, errStr.str()));
@@ -904,11 +1023,13 @@ NAN_METHOD(Java::newArray) {
     // create array
     results = env->NewObjectArray(arrayObj->Length(), clazz, NULL);
 
-    for(uint32_t i=0; i<arrayObj->Length(); i++) {
+    for (uint32_t i = 0; i < arrayObj->Length(); i++)
+    {
       v8::Local<v8::Value> item = arrayObj->Get(Nan::GetCurrentContext(), i).ToLocalChecked();
       jobject val = v8ToJava(env, item);
       env->SetObjectArrayElement((jobjectArray)results, i, val);
-      if(env->ExceptionOccurred()) {
+      if (env->ExceptionOccurred())
+      {
         std::ostringstream errStr;
         Nan::Utf8String valStr(item);
         errStr << "Could not add item \"" << *valStr << "\" to array.";
@@ -920,23 +1041,27 @@ NAN_METHOD(Java::newArray) {
   info.GetReturnValue().Set(JavaObject::New(self, results));
 }
 
-NAN_METHOD(Java::newByte) {
+NAN_METHOD(Java::newByte)
+{
   Nan::HandleScope scope;
-  Java* self = Nan::ObjectWrap::Unwrap<Java>(info.This());
+  Java *self = Nan::ObjectWrap::Unwrap<Java>(info.This());
   v8::Local<v8::Value> ensureJvmResults = self->ensureJvm();
-  if(!ensureJvmResults->IsNull()) {
+  if (!ensureJvmResults->IsNull())
+  {
     info.GetReturnValue().Set(ensureJvmResults);
     return;
   }
-  JNIEnv* env = self->getJavaEnv();
+  JNIEnv *env = self->getJavaEnv();
   JavaScope javaScope(env);
 
-  if(info.Length() != 1) {
+  if (info.Length() != 1)
+  {
     return Nan::ThrowError(Nan::TypeError("newByte only takes 1 argument"));
   }
 
   // argument - value
-  if(!info[0]->IsNumber()) {
+  if (!info[0]->IsNumber())
+  {
     return Nan::ThrowError(Nan::TypeError("Argument 1 must be a number"));
   }
 
@@ -950,23 +1075,27 @@ NAN_METHOD(Java::newByte) {
   return;
 }
 
-NAN_METHOD(Java::newShort) {
+NAN_METHOD(Java::newShort)
+{
   Nan::HandleScope scope;
-  Java* self = Nan::ObjectWrap::Unwrap<Java>(info.This());
+  Java *self = Nan::ObjectWrap::Unwrap<Java>(info.This());
   v8::Local<v8::Value> ensureJvmResults = self->ensureJvm();
-  if(!ensureJvmResults->IsNull()) {
+  if (!ensureJvmResults->IsNull())
+  {
     info.GetReturnValue().Set(ensureJvmResults);
     return;
   }
-  JNIEnv* env = self->getJavaEnv();
+  JNIEnv *env = self->getJavaEnv();
   JavaScope javaScope(env);
 
-  if(info.Length() != 1) {
+  if (info.Length() != 1)
+  {
     return Nan::ThrowError(Nan::TypeError("newShort only takes 1 argument"));
   }
 
   // argument - value
-  if(!info[0]->IsNumber()) {
+  if (!info[0]->IsNumber())
+  {
     return Nan::ThrowError(Nan::TypeError("Argument 1 must be a number"));
   }
 
@@ -979,23 +1108,27 @@ NAN_METHOD(Java::newShort) {
   info.GetReturnValue().Set(JavaObject::New(self, newObj));
 }
 
-NAN_METHOD(Java::newLong) {
+NAN_METHOD(Java::newLong)
+{
   Nan::HandleScope scope;
-  Java* self = Nan::ObjectWrap::Unwrap<Java>(info.This());
+  Java *self = Nan::ObjectWrap::Unwrap<Java>(info.This());
   v8::Local<v8::Value> ensureJvmResults = self->ensureJvm();
-  if(!ensureJvmResults->IsNull()) {
+  if (!ensureJvmResults->IsNull())
+  {
     info.GetReturnValue().Set(ensureJvmResults);
     return;
   }
-  JNIEnv* env = self->getJavaEnv();
+  JNIEnv *env = self->getJavaEnv();
   JavaScope javaScope(env);
 
-  if(info.Length() != 1) {
+  if (info.Length() != 1)
+  {
     return Nan::ThrowError(Nan::TypeError("newLong only takes 1 argument"));
   }
 
   // argument - value
-  if(!info[0]->IsNumber()) {
+  if (!info[0]->IsNumber())
+  {
     return Nan::ThrowError(Nan::TypeError("Argument 1 must be a number"));
   }
 
@@ -1008,33 +1141,42 @@ NAN_METHOD(Java::newLong) {
   info.GetReturnValue().Set(JavaObject::New(self, newObj));
 }
 
-NAN_METHOD(Java::newChar) {
+NAN_METHOD(Java::newChar)
+{
   Nan::HandleScope scope;
-  Java* self = Nan::ObjectWrap::Unwrap<Java>(info.This());
+  Java *self = Nan::ObjectWrap::Unwrap<Java>(info.This());
   v8::Local<v8::Value> ensureJvmResults = self->ensureJvm();
-  if(!ensureJvmResults->IsNull()) {
+  if (!ensureJvmResults->IsNull())
+  {
     info.GetReturnValue().Set(ensureJvmResults);
     return;
   }
-  JNIEnv* env = self->getJavaEnv();
+  JNIEnv *env = self->getJavaEnv();
   JavaScope javaScope(env);
 
-  if(info.Length() != 1) {
+  if (info.Length() != 1)
+  {
     return Nan::ThrowError(Nan::TypeError("newChar only takes 1 argument"));
   }
 
   // argument - value
   jchar charVal;
-  if(info[0]->IsNumber()) {
+  if (info[0]->IsNumber())
+  {
     charVal = (jchar)Nan::To<int32_t>(info[0]).FromJust();
-  } else if(info[0]->IsString()) {
+  }
+  else if (info[0]->IsString())
+  {
     v8::Local<v8::String> val = info[0]->ToString(Nan::GetCurrentContext()).ToLocalChecked();
-    if(val->Length() != 1) {
+    if (val->Length() != 1)
+    {
       return Nan::ThrowError(Nan::TypeError("Argument 1 must be a string of 1 character."));
     }
     std::string strVal = std::string(*Nan::Utf8String(val));
     charVal = (jchar)strVal[0];
-  } else {
+  }
+  else
+  {
     return Nan::ThrowError(Nan::TypeError("Argument 1 must be a number or string"));
   }
 
@@ -1045,20 +1187,25 @@ NAN_METHOD(Java::newChar) {
   info.GetReturnValue().Set(JavaObject::New(self, newObj));
 }
 
-NAN_METHOD(Java::newFloat) {
+NAN_METHOD(Java::newFloat)
+{
   Nan::HandleScope scope;
-  Java* self = Nan::ObjectWrap::Unwrap<Java>(info.This());
+  Java *self = Nan::ObjectWrap::Unwrap<Java>(info.This());
   v8::Local<v8::Value> ensureJvmResults = self->ensureJvm();
-  if(!ensureJvmResults->IsNull()) {
+  if (!ensureJvmResults->IsNull())
+  {
     info.GetReturnValue().Set(ensureJvmResults);
     return;
   }
-  JNIEnv* env = self->getJavaEnv();
+  JNIEnv *env = self->getJavaEnv();
   JavaScope javaScope(env);
 
-  if(info.Length() != 1) {
+  if (info.Length() != 1)
+  {
     return Nan::ThrowError(Nan::TypeError("newFloat only takes 1 argument"));
-  } else if(!info[0]->IsNumber()) {
+  }
+  else if (!info[0]->IsNumber())
+  {
     return Nan::ThrowError(Nan::TypeError("Argument 1 must be a number"));
   }
   jfloat val = (jfloat)Nan::To<double>(info[0]).FromJust();
@@ -1070,20 +1217,25 @@ NAN_METHOD(Java::newFloat) {
   info.GetReturnValue().Set(JavaObject::New(self, newObj));
 }
 
-NAN_METHOD(Java::newDouble) {
+NAN_METHOD(Java::newDouble)
+{
   Nan::HandleScope scope;
-  Java* self = Nan::ObjectWrap::Unwrap<Java>(info.This());
+  Java *self = Nan::ObjectWrap::Unwrap<Java>(info.This());
   v8::Local<v8::Value> ensureJvmResults = self->ensureJvm();
-  if(!ensureJvmResults->IsNull()) {
+  if (!ensureJvmResults->IsNull())
+  {
     info.GetReturnValue().Set(ensureJvmResults);
     return;
   }
-  JNIEnv* env = self->getJavaEnv();
+  JNIEnv *env = self->getJavaEnv();
   JavaScope javaScope(env);
 
-  if(info.Length() != 1) {
+  if (info.Length() != 1)
+  {
     return Nan::ThrowError(Nan::TypeError("newDouble only takes 1 argument"));
-  } else if(!info[0]->IsNumber()) {
+  }
+  else if (!info[0]->IsNumber())
+  {
     return Nan::ThrowError(Nan::TypeError("Argument 1 must be a number"));
   }
 
@@ -1096,15 +1248,17 @@ NAN_METHOD(Java::newDouble) {
   info.GetReturnValue().Set(JavaObject::New(self, newObj));
 }
 
-NAN_METHOD(Java::getStaticFieldValue) {
+NAN_METHOD(Java::getStaticFieldValue)
+{
   Nan::HandleScope scope;
-  Java* self = Nan::ObjectWrap::Unwrap<Java>(info.This());
+  Java *self = Nan::ObjectWrap::Unwrap<Java>(info.This());
   v8::Local<v8::Value> ensureJvmResults = self->ensureJvm();
-  if(!ensureJvmResults->IsNull()) {
+  if (!ensureJvmResults->IsNull())
+  {
     info.GetReturnValue().Set(ensureJvmResults);
     return;
   }
-  JNIEnv* env = self->getJavaEnv();
+  JNIEnv *env = self->getJavaEnv();
   JavaScope javaScope(env);
 
   int argsStart = 0;
@@ -1115,7 +1269,8 @@ NAN_METHOD(Java::getStaticFieldValue) {
 
   // find the class
   jclass clazz = javaFindClass(env, className);
-  if(clazz == NULL) {
+  if (clazz == NULL)
+  {
     std::ostringstream errStr;
     errStr << "Could not create class " << className.c_str();
     return Nan::ThrowError(javaExceptionToV8(self, env, errStr.str()));
@@ -1123,7 +1278,8 @@ NAN_METHOD(Java::getStaticFieldValue) {
 
   // get the field
   jobject field = javaFindField(env, clazz, fieldName);
-  if(field == NULL) {
+  if (field == NULL)
+  {
     std::ostringstream errStr;
     errStr << "Could not find field \"" << fieldName.c_str() << "\" on class \"" << className.c_str() << "\"";
     return Nan::ThrowError(javaExceptionToV8(self, env, errStr.str()));
@@ -1134,7 +1290,8 @@ NAN_METHOD(Java::getStaticFieldValue) {
 
   // get field value
   jobject val = env->CallObjectMethod(field, field_get, NULL);
-  if(env->ExceptionOccurred()) {
+  if (env->ExceptionOccurred())
+  {
     std::ostringstream errStr;
     errStr << "Could not get field " << fieldName.c_str() << " on class " << className.c_str();
     return Nan::ThrowError(javaExceptionToV8(self, env, errStr.str()));
@@ -1143,15 +1300,17 @@ NAN_METHOD(Java::getStaticFieldValue) {
   info.GetReturnValue().Set(javaToV8(self, env, val));
 }
 
-NAN_METHOD(Java::setStaticFieldValue) {
+NAN_METHOD(Java::setStaticFieldValue)
+{
   Nan::HandleScope scope;
-  Java* self = Nan::ObjectWrap::Unwrap<Java>(info.This());
+  Java *self = Nan::ObjectWrap::Unwrap<Java>(info.This());
   v8::Local<v8::Value> ensureJvmResults = self->ensureJvm();
-  if(!ensureJvmResults->IsNull()) {
+  if (!ensureJvmResults->IsNull())
+  {
     info.GetReturnValue().Set(ensureJvmResults);
     return;
   }
-  JNIEnv* env = self->getJavaEnv();
+  JNIEnv *env = self->getJavaEnv();
   JavaScope javaScope(env);
 
   int argsStart = 0;
@@ -1161,9 +1320,10 @@ NAN_METHOD(Java::setStaticFieldValue) {
   ARGS_FRONT_STRING(fieldName);
 
   // argument - new value
-  if(info.Length() < argsStart+1) {
+  if (info.Length() < argsStart + 1)
+  {
     std::ostringstream errStr;
-    errStr << "setStaticFieldValue requires " << (argsStart+1) << " arguments";
+    errStr << "setStaticFieldValue requires " << (argsStart + 1) << " arguments";
     Nan::ThrowError(Nan::TypeError(errStr.str().c_str()));
     return;
   }
@@ -1172,7 +1332,8 @@ NAN_METHOD(Java::setStaticFieldValue) {
 
   // find the class
   jclass clazz = javaFindClass(env, className);
-  if(clazz == NULL) {
+  if (clazz == NULL)
+  {
     std::ostringstream errStr;
     errStr << "Could not create class " << className.c_str();
     Nan::ThrowError(javaExceptionToV8(self, env, errStr.str()));
@@ -1181,7 +1342,8 @@ NAN_METHOD(Java::setStaticFieldValue) {
 
   // get the field
   jobject field = javaFindField(env, clazz, fieldName);
-  if(field == NULL) {
+  if (field == NULL)
+  {
     std::ostringstream errStr;
     errStr << "Could not find field \"" << fieldName.c_str() << "\" on class \"" << className.c_str() << "\"";
     Nan::ThrowError(javaExceptionToV8(self, env, errStr.str()));
@@ -1195,7 +1357,8 @@ NAN_METHOD(Java::setStaticFieldValue) {
 
   // set field value
   env->CallObjectMethod(field, field_set, NULL, newValue);
-  if(env->ExceptionOccurred()) {
+  if (env->ExceptionOccurred())
+  {
     std::ostringstream errStr;
     errStr << "Could not set field " << fieldName.c_str() << " on class " << className.c_str();
     Nan::ThrowError(javaExceptionToV8(self, env, errStr.str()));
@@ -1205,15 +1368,17 @@ NAN_METHOD(Java::setStaticFieldValue) {
   info.GetReturnValue().SetUndefined();
 }
 
-NAN_METHOD(Java::instanceOf) {
+NAN_METHOD(Java::instanceOf)
+{
   Nan::HandleScope scope;
-  Java* self = Nan::ObjectWrap::Unwrap<Java>(info.This());
+  Java *self = Nan::ObjectWrap::Unwrap<Java>(info.This());
   v8::Local<v8::Value> ensureJvmResults = self->ensureJvm();
-  if(!ensureJvmResults->IsNull()) {
+  if (!ensureJvmResults->IsNull())
+  {
     info.GetReturnValue().Set(ensureJvmResults);
     return;
   }
-  JNIEnv* env = self->getJavaEnv();
+  JNIEnv *env = self->getJavaEnv();
   JavaScope javaScope(env);
 
   int argsStart = 0;
@@ -1221,14 +1386,16 @@ NAN_METHOD(Java::instanceOf) {
   ARGS_FRONT_STRING(className);
 
   jobject instance = v8ToJava(env, obj);
-  if (!instance) {
+  if (!instance)
+  {
     // not even a Java object
     info.GetReturnValue().Set(Nan::New<v8::Boolean>(false));
     return;
   }
 
   jclass clazz = javaFindClass(env, className);
-  if(!clazz) {
+  if (!clazz)
+  {
     std::ostringstream errStr;
     errStr << "Could not find class " << className.c_str();
     Nan::ThrowError(javaExceptionToV8(self, env, errStr.str()));
@@ -1240,25 +1407,29 @@ NAN_METHOD(Java::instanceOf) {
 }
 
 template <typename T>
-std::string to_string(T value) {
+std::string to_string(T value)
+{
   std::ostringstream os;
   os << value;
   return os.str();
 }
 
-void EIO_CallJs(DynamicProxyJsCallData *callData) {
-  DynamicProxyData* dynamicProxyData = callData->dynamicProxyData;
+void EIO_CallJs(DynamicProxyJsCallData *callData)
+{
+  DynamicProxyData *dynamicProxyData = callData->dynamicProxyData;
 
   assert(callData->done == 0);
 
-  if(!dynamicProxyDataVerify(dynamicProxyData)) {
+  if (!dynamicProxyDataVerify(dynamicProxyData))
+  {
     return;
   }
   callData->result = NULL;
 
-  JNIEnv* env;
-  int ret = dynamicProxyData->java->getJvm()->GetEnv((void**)&env, JNI_BEST_VERSION);
-  if (ret != JNI_OK) {
+  JNIEnv *env;
+  int ret = dynamicProxyData->java->getJvm()->GetEnv((void **)&env, JNI_BEST_VERSION);
+  if (ret != JNI_OK)
+  {
     callData->throwableClass = "java/lang/IllegalStateException";
     callData->throwableMessage = "Could not retrieve JNIEnv: jvm->GetEnv returned " + to_string<int>(ret);
     callData->done = DYNAMIC_PROXY_JS_ERROR;
@@ -1266,9 +1437,9 @@ void EIO_CallJs(DynamicProxyJsCallData *callData) {
   }
 
   Nan::HandleScope scope;
-  v8::Array* v8Args;
+  v8::Array *v8Args;
   v8::Local<v8::Function> fn;
-  v8::Local<v8::Value>* argv;
+  v8::Local<v8::Value> *argv;
   int argc;
   int i;
   v8::Local<v8::Value> v8Result;
@@ -1276,13 +1447,15 @@ void EIO_CallJs(DynamicProxyJsCallData *callData) {
 
   v8::Local<v8::Object> dynamicProxyDataFunctions = Nan::New(dynamicProxyData->functions);
   v8::Local<v8::Value> fnObj = dynamicProxyDataFunctions->Get(Nan::GetCurrentContext(), Nan::New<v8::String>(callData->methodName.c_str()).ToLocalChecked()).ToLocalChecked();
-  if(fnObj->IsUndefined() || fnObj->IsNull()) {
+  if (fnObj->IsUndefined() || fnObj->IsNull())
+  {
     callData->throwableClass = "java/lang/NoSuchMethodError";
     callData->throwableMessage = "Could not find js function " + callData->methodName;
     callData->done = DYNAMIC_PROXY_JS_ERROR;
     return;
   }
-  if(!fnObj->IsFunction()) {
+  if (!fnObj->IsFunction())
+  {
     callData->throwableClass = "java/lang/IllegalStateException";
     callData->throwableMessage = callData->methodName + " is not a function";
     callData->done = DYNAMIC_PROXY_JS_ERROR;
@@ -1291,14 +1464,18 @@ void EIO_CallJs(DynamicProxyJsCallData *callData) {
 
   fn = fnObj.As<v8::Function>();
 
-  if(callData->args) {
+  if (callData->args)
+  {
     v8Args = v8::Array::Cast(*javaArrayToV8(dynamicProxyData->java, env, callData->args));
     argc = v8Args->Length();
-  } else {
+  }
+  else
+  {
     argc = 0;
   }
   argv = new v8::Local<v8::Value>[argc];
-  for(i=0; i<argc; i++) {
+  for (i = 0; i < argc; i++)
+  {
     argv[i] = v8Args->Get(Nan::GetCurrentContext(), i).ToLocalChecked();
   }
 
@@ -1306,7 +1483,8 @@ void EIO_CallJs(DynamicProxyJsCallData *callData) {
   tryCatch.SetCaptureMessage(true);
   v8Result = Nan::Call(fn, dynamicProxyDataFunctions, argc, argv).FromMaybe(v8::Local<v8::Value>());
   delete[] argv;
-  if (tryCatch.HasCaught()) {
+  if (tryCatch.HasCaught())
+  {
     callData->throwableClass = "node/NodeJsException";
     Nan::Utf8String message(tryCatch.Message()->Get());
     callData->throwableMessage = std::string(*message);
@@ -1315,35 +1493,42 @@ void EIO_CallJs(DynamicProxyJsCallData *callData) {
     return;
   }
 
-  if(!dynamicProxyDataVerify(dynamicProxyData)) {
+  if (!dynamicProxyDataVerify(dynamicProxyData))
+  {
     return;
   }
 
   javaResult = v8ToJava(env, v8Result);
-  if(javaResult == NULL) {
+  if (javaResult == NULL)
+  {
     callData->result = NULL;
-  } else {
+  }
+  else
+  {
     callData->result = env->NewGlobalRef(javaResult);
   }
 
   callData->done = true;
 }
 
-void throwNewThrowable(JNIEnv* env, const char * excClassName, std::string msg) {
+void throwNewThrowable(JNIEnv *env, const char *excClassName, std::string msg)
+{
   jclass newExcCls = env->FindClass(excClassName);
   jthrowable throwable = env->ExceptionOccurred();
-  if (throwable != NULL) {
+  if (throwable != NULL)
+  {
     env->Throw(throwable); // this should only be Errors, according to the docs
   }
   env->ThrowNew(newExcCls, msg.c_str());
 }
 
-JNIEXPORT jobject JNICALL Java_node_NodeDynamicProxyClass_callJs(JNIEnv *env, jobject src, jlong ptr, jobject method, jobjectArray args) {
+JNIEXPORT jobject JNICALL Java_node_NodeDynamicProxyClass_callJs(JNIEnv *env, jobject src, jlong ptr, jobject method, jobjectArray args)
+{
   threadId myThreadId = my_getThreadId();
 
   bool hasArgsGlobalRef = false;
 
-  DynamicProxyData* dynamicProxyData = (DynamicProxyData*)ptr;
+  DynamicProxyData *dynamicProxyData = (DynamicProxyData *)ptr;
 
   // args needs to be global, you can't send env across thread boundaries
   DynamicProxyJsCallData callData;
@@ -1359,12 +1544,16 @@ JNIEXPORT jobject JNICALL Java_node_NodeDynamicProxyClass_callJs(JNIEnv *env, jo
   callData.methodName = javaObjectToString(env, env->CallObjectMethod(method, method_getName));
   assertNoException(env);
 
-  if(v8ThreadIdEquals(myThreadId, v8ThreadId)) {
+  if (v8ThreadIdEquals(myThreadId, v8ThreadId))
+  {
     EIO_CallJs(&callData);
-  } else {
-    if (args) {
+  }
+  else
+  {
+    if (args)
+    {
       // if args is not null and we have to kick this across the thread boundary, make it a global ref
-      callData.args = (jobjectArray) env->NewGlobalRef(args);
+      callData.args = (jobjectArray)env->NewGlobalRef(args);
       hasArgsGlobalRef = true;
     }
 
@@ -1373,24 +1562,29 @@ JNIEXPORT jobject JNICALL Java_node_NodeDynamicProxyClass_callJs(JNIEnv *env, jo
     uv_mutex_unlock(&uvMutex_dynamicProxyJsCall);
     uv_async_send(&uvAsync_dynamicProxyJsCall);
 
-    while(!callData.done) {
+    while (!callData.done)
+    {
       my_sleep(100);
     }
   }
 
-  if(!dynamicProxyDataVerify(dynamicProxyData)) {
+  if (!dynamicProxyDataVerify(dynamicProxyData))
+  {
     throwNewThrowable(env, "java/lang/IllegalStateException", "dynamicProxyData was corrupted");
   }
-  if(hasArgsGlobalRef) {
+  if (hasArgsGlobalRef)
+  {
     env->DeleteGlobalRef(callData.args);
   }
 
-  if (callData.done == DYNAMIC_PROXY_JS_ERROR) {
+  if (callData.done == DYNAMIC_PROXY_JS_ERROR)
+  {
     throwNewThrowable(env, callData.throwableClass.c_str(), callData.throwableMessage);
   }
 
   jobject result = NULL;
-  if(callData.result) {
+  if (callData.result)
+  {
     // need to retain a local ref so that we can return it, otherwise the returned object gets corrupted
     result = env->NewLocalRef(callData.result);
     env->DeleteGlobalRef(callData.result);
@@ -1398,7 +1592,8 @@ JNIEXPORT jobject JNICALL Java_node_NodeDynamicProxyClass_callJs(JNIEnv *env, jo
   return result;
 }
 
-JNIEXPORT void JNICALL Java_node_NodeDynamicProxyClass_unref(JNIEnv *env, jobject src, jlong ptr) {
-  DynamicProxyData* dynamicProxyData = (DynamicProxyData*)ptr;
+JNIEXPORT void JNICALL Java_node_NodeDynamicProxyClass_unref(JNIEnv *env, jobject src, jlong ptr)
+{
+  DynamicProxyData *dynamicProxyData = (DynamicProxyData *)ptr;
   unref(dynamicProxyData);
 }
