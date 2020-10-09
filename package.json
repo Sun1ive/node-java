@@ -1,5 +1,5 @@
 {
-  "name": "java",
+  "name": "@temabit/java",
   "description": "Bridge API to connect with existing Java APIs.",
   "author": "Joe Ferner <joe@fernsroth.com>",
   "keywords": [
